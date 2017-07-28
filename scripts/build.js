@@ -29,16 +29,17 @@ function init() {
 
 function onError(error) {
     sh.echo(chalk.red(`${config.package} build fail: ${error}`));
-    exit(1);
+    process.exit(1);
 }
 
 function lint(){
-    /* TSLint with Codelyzer */
-    // https://github.com/palantir/tslint/blob/master/src/configs/recommended.ts
-    // https://github.com/mgechev/codelyzer
-    // sh.echo(`Start TSLint`);
-    // sh.exec(`tslint --project ${srcDir}/tsconfig.json --type-check ${srcDir}/**/*.ts`);
-    // sh.echo(chalk.green(`TSLint completed`));
+    sh.echo(chalk.yellow(`Lint check started for ${config.package}`));
+    const results = sh.exec(`tslint --project tsconfig.json --type-check ${srcDir}/lib/**/*.ts`);
+    if(results.code !== 0){
+        sh.echo(chalk.red(`Lint check completed with errors.`));
+        process.exit(1);
+    }
+    sh.echo(chalk.green(`Lint check completed successfully.`));
     compile();
 }
 
@@ -47,7 +48,7 @@ function compile() {
     sh.echo(chalk.yellow(`AoT compilation started for ${config.package}`));
     if(sh.exec(`ngc --prod --aot -p ${aotCfg}`).code !== 0) {
         sh.echo(chalk.red(`Error: AoT compilation failed for ${config.package}`));
-        exit(1);
+        process.exit(1);
     }
     sh.echo(chalk.green(`AoT compilation completed for ${config.package}`));
     rollup();
@@ -86,6 +87,30 @@ function cleanup() {
     ];
     sh.rm(`-rf`, toRemove);
     sh.echo(chalk.green(`Cleanup completed for ${config.package}`));
+
+    makePackageJson();
+}
+
+function makePackageJson() {
+    var _commonPackageJson = [ 'name', 'version', 'description', 'license', 'author', 'repository', 'peerDependencies' ],
+        _rootPackageJson = JSON.parse(fs.readFileSync(`${root}\\package.json`, 'utf8')),
+        _distPackageJson = {
+            'name': '',
+            'version': '',
+            'description': '',
+            'main': `./bundles/${config.package}.umd.js`,
+            'module': `./@${config.scope}/${config.package}.es5.js`,
+            'es2015': `./@${config.scope}/${config.package}.js`,
+            'typings': `./${config.package}.d.ts`
+        };
+
+    Object.keys(_rootPackageJson).forEach(function(key) {
+        if(_commonPackageJson.indexOf(key) != -1){
+            _distPackageJson[key] = _rootPackageJson[key];
+        }
+    });
+    
+    fs.writeFileSync(`${distDir}\\package.json`, JSON.stringify(_distPackageJson, null, 2), 'utf8');
 }
 
 init();

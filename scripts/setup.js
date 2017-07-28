@@ -35,16 +35,6 @@ function configGit() {
         if (err) {
             console.log(err);
             process.exit(5);
-        } else {
-            if (sh.exec(`git init`).code !== 0) {
-                process.exit(2);
-            }
-            if (sh.exec(`git remote add origin ${config.origin}${config.scope}-${config.package}`).code !== 0) {
-                process.exit(3);
-            }
-            if (sh.exec(`git push -u origin --all`).code !== 0) {
-                process.exit(4);
-            }
         }
     });
 }
@@ -61,6 +51,7 @@ function configProject() {
     // tsconfig-aot
     const tsconfigAotJson = getJson(tsconfigAotJsonPath);
     tsconfigAotJson.compilerOptions.outDir = `./dist/${config.package}`;
+    tsconfigAotJson.angularCompilerOptions.flatModuleOutFile = `${config.package}.js`;
     tsconfigAotJson.angularCompilerOptions.flatModuleId = `@${config.scope}/${config.package}`;
     putJson(tsconfigAotJsonPath, tsconfigAotJson);
 
@@ -72,6 +63,7 @@ function configProject() {
     // package
     const packageJson = getJson(packageJsonPath);
     packageJson.name = `@${config.scope}/${config.package}`;
+    packageJson.repository.url = config.origin;
     delete packageJson.scripts.postinstall;
     putJson(packageJsonPath, packageJson);
 }

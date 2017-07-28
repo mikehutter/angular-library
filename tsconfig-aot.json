@@ -32,7 +32,7 @@
     "skipTemplateCodegen": true,
     "annotateForClosureCompiler": true,
     "strictMetadataEmit": true,
-    "flatModuleOutFile": "index.js",
+    "flatModuleOutFile": "pkg.js",
     "flatModuleId": "@my/pkg"
   }
 }
